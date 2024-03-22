@@ -5,10 +5,11 @@ from classes_abstraites import Loss
 
 class MSELoss(Loss):
     def forward(self, y: np.ndarray, yhat: np.ndarray):
-        batch_size, d = y.shape
-        assert yhat.shape == (batch_size, d)
+        assert y.shape == yhat.shape
 
-        return np.linalg.norm(y-yhat, axis=1) ** 2
+        return np.linalg.norm(y - yhat, axis=1)**2
 
-    def backward(self, y, yhat):
-        pass  # TODO
+    def backward(self, y: np.ndarray, yhat: np.ndarray):
+        assert y.shape == yhat.shape
+
+        return -2 * (y - yhat)
