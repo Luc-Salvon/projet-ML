@@ -21,8 +21,16 @@ class Linear(Module):
 
         return X @ self._parameters
 
-    def backward_update_gradient(self, input, delta):
-        pass  # TODO
+    def backward_update_gradient(self, input: np.ndarray, delta: np.ndarray):
+        batch_size = input.shape[0]
+        assert input.shape[1] == self.input_size
+        assert delta.shape == (batch_size, self.output_size)
+
+        self._gradient += input.T @ delta
 
     def backward_delta(self, input, delta):
-        pass  # TODO
+        batch_size = input.shape[0]
+        assert input.shape[1] == self.input_size
+        assert delta.shape == (batch_size, self.output_size)
+
+        return delta @ self._parameters.T
