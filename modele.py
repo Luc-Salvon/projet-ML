@@ -1,7 +1,5 @@
 from typing import Iterable
 
-import numpy as np
-
 import classes_abstraites
 
 
@@ -26,11 +24,9 @@ class Modele:
 
                 Yhat = self.predict(X_batch)
 
-                loss = self.loss.forward(Y_batch, Yhat).mean()
-
                 delta = self.loss.backward(Y_batch, Yhat)
 
-                for module in self.modules:
+                for module in self.modules[::-1]:
                     module.zero_grad()
                     module.backward_update_gradient(X_batch, delta)
                     module.update_parameters()
