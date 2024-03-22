@@ -5,20 +5,21 @@ import classes_abstraites
 
 class Modele:
     def __init__(self, modules: Iterable[classes_abstraites.Module], loss: classes_abstraites.Loss):
-        self.modules = modules
-        self.loss = loss
-        self.loss_evolution = []
+        self.modules = modules  # Liste des modules utilisés dans le modèle
+        self.loss = loss  # Fonction de loss utilisée
+        self.loss_evolution = []  # Liste de la loss à chaque epoch
 
     def fit(self, X, Y, nb_epochs=50, eps=10e-10, batch_size=5):
-        N = X.shape[0]
+        N = X.shape[0]  # Nombre d'exemples total
 
-        for i_epoch in range(nb_epochs):
+        for i_epoch in range(nb_epochs):  # On itère sur les epochs
+            self.loss_evolution.append(self.loss.forward(Y, self.predict(X)).mean())
+
+            # Si la loss n'évolue pas significativement on s'arrête
             if len(self.loss_evolution) > 1 and abs(self.loss_evolution[-1] - self.loss_evolution[-2]) < eps:
                 break
 
-            self.loss_evolution.append(self.loss.forward(Y, self.predict(X)).mean())
-
-            for i_batch in range(0, N, batch_size):
+            for i_batch in range(0, N, batch_size):  # On itère sur les batchs
                 X_batch = X[i_batch:min(i_batch + batch_size, N)]
                 Y_batch = Y[i_batch:min(i_batch + batch_size, N)]
 
@@ -26,6 +27,7 @@ class Modele:
 
                 delta = self.loss.backward(Y_batch, Yhat)
 
+                # Backpropagation
                 for module in self.modules[::-1]:
                     module.zero_grad()
                     module.backward_update_gradient(X_batch, delta)
