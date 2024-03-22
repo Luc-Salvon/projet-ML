@@ -10,7 +10,7 @@ from modules import *
 if __name__ == "__main__":
     modele = Modele([Linear(2, 1)], MSELoss())
 
-    data = mltools.gen_arti(nbex=1000)
+    data = mltools.gen_arti(nbex=1000, data_type=0)
     X_train, X_test, Y_train, Y_test = data[0][:800], data[0][800:], data[1][:800], data[1][800:]
 
     print(X_train.shape, Y_train.shape)

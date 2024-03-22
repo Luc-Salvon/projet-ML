@@ -11,7 +11,7 @@ class Modele:
         self.loss = loss
         self.loss_evolution = []
 
-    def fit(self, X, Y, nb_epochs=50, eps=10e-4, batch_size=5):
+    def fit(self, X, Y, nb_epochs=50, eps=10e-10, batch_size=5):
         N = X.shape[0]
 
         for i_epoch in range(nb_epochs):
