@@ -56,6 +56,10 @@ def test_partie2():
     print("Accuracy:", np.mean(np.round(yhat) == Y_test))
 
 
+
+def tes_partie4():
+    pass
+
 if __name__ == "__main__":
     # test_partie1()
     test_partie2()

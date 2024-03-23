@@ -72,3 +72,21 @@ class Sigmoide(Module):
 
     def update_parameters(self, gradient_step=1e-3):
         pass
+
+
+
+class Softmax(Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, X):
+        exp_scores = np.exp(X - np.max(X, axis=1, keepdims=True))
+        return exp_scores / np.sum(exp_scores, axis=1, keepdims=True)
+
+    def backward_delta(self, input, delta):
+        s = self.forward(input)
+        return np.diag(s) - np.outer(s, s)*delta
+
+    def update_parameters(self, gradient_step=1e-3):
+        pass
+
