@@ -51,7 +51,7 @@ class TanH(Module):
         return np.tanh(X)
 
     def backward_delta(self, input, delta):
-        return 1 - (np.tanh(input)**2) * delta
+        return (1 - (np.tanh(input)**2)) * delta
 
     def update_parameters(self, gradient_step=1e-3):
         pass
