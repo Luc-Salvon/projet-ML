@@ -84,17 +84,16 @@ class Softmax(Module):
 
     def backward_delta(self, input, delta):
         s = self.forward(input)
-
         n, d = input.shape
-        jacobian_matrices = np.zeros((n, d, d))
-        for i in range(n):
-            for j in range(d):
-                for k in range(d):
-                    if j == k:
-                        jacobian_matrices[i, j, k] = s[i, j] * (1 - s[i, k])
-                    else:
-                        jacobian_matrices[i, j, k] = -s[i, j] * s[i, k]
 
+        # Diagonal elements
+        diag_indices = np.arange(d)
+        jacobian_matrices[:, diag_indices, diag_indices] = s * (1 - s)
+        
+        # Off-diagonal elements
+        off_diag_indices = np.arange(d)
+        jacobian_matrices[:, off_diag_indices[:, None], off_diag_indices] = -s[:, :, None] * s[:, None, :]
+        
         return jacobian_matrices
 
     def update_parameters(self, gradient_step=1e-3):
