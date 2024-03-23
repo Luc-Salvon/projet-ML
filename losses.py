@@ -19,9 +19,9 @@ class CrossEntropyLoss(Loss):
     def forward(self, y, yhat):
         assert y.shape == yhat.shape
 
-        return -np.sum(y * np.log(yhat), axis=1)
+        return np.sum(y*yhat,axis=1)
 
-    def backward(self, y, yhat):
+    def backward(self, y, yhat): # pas sur
         assert y.shape == yhat.shape
 
         return yhat - y

@@ -1,4 +1,6 @@
 from matplotlib import pyplot as plt
+from sklearn.datasets import load_digits
+from sklearn.model_selection import train_test_split
 
 import mltools
 
@@ -57,9 +59,40 @@ def test_partie2():
 
 
 
-def tes_partie4():
-    pass
+def test_partie4():
+    digits = load_digits()
+    X = digits.data
+    y = digits.target
+
+    X /= 255.0 # Normalisation des données
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    onehot_train = np.zeros((y_train.size,10))
+    onehot_train[np.arange(y_train.size),y_train]=1
+
+    onehot_test = np.zeros((y_test.size,10))
+    onehot_test[np.arange(y_test.size),y_test]=1
+
+    net = Sequentiel([Linear(X.shape[1], 10)])
+    
+    evolution_loss = sgd(net, (X_train, onehot_train), loss=LogSoftmaxCrossEntropy(), batch_size=32, nb_epochs=100, eps=1e-2)
+
+    # Plot de la loss
+    plt.plot(evolution_loss)
+    plt.xlabel("Nombre d'epochs")
+    plt.ylabel("Loss")
+    plt.title("Evolution de la loss en fonction du nombre d'epochs")
+    plt.show()
+
+    # Évaluation du modèle sur l'ensemble de test
+    pred = np.argmax(net.forward(X_test), axis=1)
+    pred_one_hot = np.zeros_like(onehot_test)
+    pred_one_hot[np.arange(onehot_test.shape[0]), pred] = 1
+
+    accuracy = np.mean(pred_one_hot == onehot_test)
+    print("Accuracy sur l'ensemble de test:", accuracy)
 
 if __name__ == "__main__":
     # test_partie1()
-    test_partie2()
+    # test_partie2()
+    test_partie4()

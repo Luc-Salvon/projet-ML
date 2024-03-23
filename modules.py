@@ -21,7 +21,6 @@ class Linear(Module):
     def forward(self, X: np.ndarray):
         assert X.shape[1] == self.input_size
         X = np.concatenate((X, np.ones((X.shape[0], 1))), axis=1)  # Ajout du biais
-
         return X @ self._parameters
 
     def backward_update_gradient(self, input: np.ndarray, delta: np.ndarray):
@@ -85,7 +84,18 @@ class Softmax(Module):
 
     def backward_delta(self, input, delta):
         s = self.forward(input)
-        return np.diag(s) - np.outer(s, s)*delta
+
+        n, d = input.shape
+        jacobian_matrices = np.zeros((n, d, d))
+        for i in range(n):
+            for j in range(d):
+                for k in range(d):
+                    if j == k:
+                        jacobian_matrices[i, j, k] = s[i, j] * (1 - s[i, k])
+                    else:
+                        jacobian_matrices[i, j, k] = -s[i, j] * s[i, k]
+
+        return jacobian_matrices
 
     def update_parameters(self, gradient_step=1e-3):
         pass
