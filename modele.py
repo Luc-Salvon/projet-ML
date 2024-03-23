@@ -66,3 +66,19 @@ def sgd(net: Sequentiel, data: tuple[np.ndarray], loss: classes_abstraites.Loss,
             optim.step(batch_X, batch_y)
 
     return evolution_loss
+
+
+
+class AutoEncoder():
+    def __init__(self,activation):
+        self.encoder = Sequentiel([Linear(256, 100), activation, Linear(100, 10), activation])
+    
+        self.decoder = Sequentiel([Linear(10, 100), activation, Linear(100, 256), Sigmoid()])
+
+    def forward(self,data):
+        return self.decoder(self.encoder(data))
+    
+    def backward(self, input, delta):
+        # TODO
+        pass
+
