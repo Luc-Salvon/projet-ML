@@ -40,4 +40,35 @@ class Linear(Module):
 
         X = np.concatenate((input, np.ones((input.shape[0], 1))), axis=1)
 
-        return delta @ self._parameters.T
+        return (delta @ self._parameters.T)[:, :-1]
+
+
+class TanH(Module):
+    def __init__(self):
+        super().__init__()
+
+    def forward(self, X):
+        return np.tanh(X)
+
+    def backward_delta(self, input, delta):
+        return 1 - (np.tanh(input)**2) * delta
+
+    def update_parameters(self, gradient_step=1e-3):
+        pass
+
+
+class Sigmoide(Module):
+    def __init__(self):
+        super().__init__()
+
+    def sigma(self, X):
+        return 1 / (1 + np.exp(-X))
+
+    def forward(self, X):
+        return self.sigma(X)
+
+    def backward_delta(self, input, delta):
+        return (self.sigma(input) * (1 - self.sigma(input))) * delta
+
+    def update_parameters(self, gradient_step=1e-3):
+        pass

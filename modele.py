@@ -28,14 +28,16 @@ class Modele:
                 delta = self.loss.backward(Y_batch, Yhat)
 
                 # Backpropagation
-                for module in self.modules[::-1]:
+                for i, module in enumerate(self.modules[::-1]):
                     module.zero_grad()
-                    module.backward_update_gradient(X_batch, delta)
+                    module.backward_update_gradient(self.inputs[-(i+2)], delta)
                     module.update_parameters()
-                    delta = module.backward_delta(X_batch, delta)
+                    delta = module.backward_delta(self.inputs[-(i+2)], delta)
 
     def predict(self, X):
-        for module in self.modules:
-            X = module.forward(X)
+        self.inputs = [X]
 
-        return X
+        for module in self.modules:
+            self.inputs.append(module.forward(self.inputs[-1]))
+
+        return self.inputs[-1]
