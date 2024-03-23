@@ -37,7 +37,7 @@ def test_partie2():
     Y_train[Y_train == -1] = 0
     Y_test[Y_test == -1] = 0
 
-    modele.fit(X_train, Y_train)
+    modele.fit(X_train, Y_train, nb_epochs=1000)
 
     # Plot de la loss
     plt.plot(modele.loss_evolution)

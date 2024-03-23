@@ -9,7 +9,7 @@ class Modele:
         self.loss = loss  # Fonction de loss utilisée
         self.loss_evolution = []  # Liste de la loss à chaque epoch
 
-    def fit(self, X, Y, nb_epochs=50, eps=10e-10, batch_size=5):
+    def fit(self, X, Y, nb_epochs=50, eps=10e-5, batch_size=5):
         N = X.shape[0]  # Nombre d'exemples total
 
         for i_epoch in range(nb_epochs):  # On itère sur les epochs
