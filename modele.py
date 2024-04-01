@@ -78,7 +78,10 @@ class AutoEncoder():
     def forward(self,data):
         return self.decoder(self.encoder(data))
     
+
     def backward(self, input, delta):
-        # TODO
-        pass
+        delta_decoder = delta
+        delta_encoder = self.decoder.backward(input, delta_decoder)
+
+        self.encoder.backward(input, delta_encoder)
 
