@@ -16,12 +16,12 @@ class MSELoss(Loss):
 
 
 class CrossEntropyLoss(Loss):
-    def forward(self, y, yhat):
+    def forward(self, y: np.ndarray, yhat: np.ndarray):
         assert y.shape == yhat.shape
 
         return np.sum(y*yhat,axis=1)
 
-    def backward(self, y, yhat): # pas sur
+    def backward(self, y: np.ndarray, yhat: np.ndarray): # pas sur
         assert y.shape == yhat.shape
 
         return yhat - y
@@ -29,8 +29,23 @@ class CrossEntropyLoss(Loss):
 
 class LogSoftmaxCrossEntropy(Loss):
 
-    def forward(self, y, yhat):
+    def forward(self, y: np.ndarray, yhat: np.ndarray):
+        assert y.shape == yhat.shape
+
         return CrossEntropyLoss().forward(y, yhat) + np.log(np.sum(np.exp(yhat), axis=1))
 
-    def backward(self, y, yhat):
+    def backward(self, y: np.ndarray, yhat: np.ndarray):
+        assert y.shape == yhat.shape
+
         return CrossEntropyLoss().backward(y, yhat) + np.exp(yhat) / np.sum(np.exp(yhat), axis=1)[:, None]
+
+
+class BinaryCrossEntropyLoss(Loss):
+
+    def forward(self, y: np.ndarray, yhat: np.ndarray):
+        return - (y * np.log(yhat) + (1 - y) * np.log(1 - yhat))
+
+    def backward(self, y: np.ndarray, yhat: np.ndarray):
+        assert y.shape == yhat.shape
+        
+        return - (y / yhat - (1 - y) / (1 - yhat))
