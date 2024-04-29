@@ -7,6 +7,7 @@ import mltools
 from modele import Sequentiel, sgd, AutoEncoder, Optim
 from losses import *
 from modules import *
+from activation import *
 
 
 def test_partie1():
