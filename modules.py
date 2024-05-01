@@ -114,45 +114,7 @@ class Conv1D(Module):
     def zero_grad(self):
         self._gradient = np.zeros_like(self._parameters)
 
-       
-    def forward(self, X):
-        batch_size, length, chan_in = X.shape
-        assert chan_in == self.chan_in, ValueError(f"number of channels doesn't match: has {chan_in} but should have {self.chan_in}")
-
-        out_length = (length - self.k_size) // self.stride + 1
-
-        X_view = sliding_window_view(X, (1, self.k_size, self.chan_in))[::1, :: self.stride, ::1].reshape(batch_size, out_length, self.chan_in, self.k_size)
-
-        self.output = np.einsum("bock, kcd -> bod", X_view, self._parameters)
-
-        return self.output
-
-
-    def backward_update_gradient(self, input, delta):
-        batch_size, length, chan_in = input.shape
-        assert chan_in == self.chan_in, ValueError(f"number of channels doesn't match: has {chan_in} but should have {self.chan_in}")
-
-        out_length = (length - self.k_size) // self.stride + 1
-
-        X_view = sliding_window_view(input, (1, self.k_size, self.chan_in))[::1, :: self.stride, ::1].reshape(batch_size, out_length, self.chan_in, self.k_size)
-
-        self._gradient += ( np.einsum("bock, bod -> kcd", X_view, delta) / batch_size)
-
-        
-    def backward_delta(self, input, delta):
-        _, length, chan_in = input.shape
-        assert chan_in == self.chan_in, ValueError(f"number of channels doesn't match: has {chan_in} but should have {self.chan_in}")
-
-        out_length = (length - self.k_size) // self.stride + 1
-
-        self.d_out = np.zeros_like(input)
-        d_in = np.einsum("bod, kcd -> kboc", delta, self._parameters)
-
-        for i in range(self.k_size):
-            self.d_out[:, i : i + out_length * self.stride : self.stride, :] += d_in[i]
-
-        return self.d_out
-
+      
 
     def update_parameters(self, learning_rate):
         self._parameters -= learning_rate * self._gradient
