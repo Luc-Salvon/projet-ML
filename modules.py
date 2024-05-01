@@ -1,6 +1,8 @@
 import math
 import numpy as np
 from classes_abstraites import Module
+from numpy.lib.stride_tricks import sliding_window_view
+
 
 
 class Linear(Module):
@@ -41,3 +43,117 @@ class Linear(Module):
 
 
 
+
+### Convolution
+
+class Flatten(Module):
+    def forward(self, X):
+        return X.reshape(X.shape[0], -1)
+
+    def backward_delta(self, input, delta):
+        return delta.reshape(input.shape)
+
+
+class MaxPool1D(Module):
+    def __init__(self, k_size, stride):
+        self.k_size = k_size
+        self.stride = stride
+
+    def forward(self, X):
+        batch_size, length, chan_in = X.shape
+        out_length = (length - self.k_size) // self.stride + 1
+
+        X_view = sliding_window_view(X, (1, self.k_size, 1))[::1, :: self.stride, ::1].reshape(batch_size, out_length, chan_in, self.k_size)
+
+        self.output = np.max(X_view, axis=-1)
+        return self.output
+
+
+    def backward_delta(self, input, delta):
+        batch_size, length, chan_in = input.shape
+        out_length = (length - self.k_size) // self.stride + 1
+
+        input_view = sliding_window_view(input, (1, self.k_size, 1))[::1, :: self.stride, ::1].reshape(batch_size, out_length, chan_in, self.k_size)
+
+        max_indices = np.argmax(input_view, axis=-1)
+
+        batch_indices = np.arange(batch_size)[:, None, None]
+        out_indices = np.arange(out_length)[None, :, None]
+        chan_indices = np.arange(chan_in)[None, None, :]
+
+        self.d_out = np.zeros_like(input)
+        self.d_out[batch_indices, out_indices * self.stride + max_indices, chan_indices] += delta[batch_indices, max_indices, chan_indices]
+
+        """
+        for b in range(batch_size):
+            for i in range(out_length):
+                for c in range(chan_in):
+                    max_index = max_indices[b, i, c]
+                    self.d_out[b, i * self.stride + max_index, c] += delta[b, i, c]
+        """
+
+        return self.d_out
+
+
+
+
+
+class Conv1D(Module):
+
+    def __init__(self, k_size: int, chan_in: int, chan_out: int, stride: int = 1):
+        super().__init__()
+        self.k_size = k_size
+        self.chan_in = chan_in
+        self.chan_out = chan_out
+        self.stride = stride
+
+        self._parameters = np.random.uniform(0.0, 1.0, (self.k_size, self.chan_in, self.chan_out))
+        self._gradient = np.zeros_like(self._parameters)
+
+
+    def zero_grad(self):
+        self._gradient = np.zeros_like(self._parameters)
+
+       
+    def forward(self, X):
+        batch_size, length, chan_in = X.shape
+        assert chan_in == self.chan_in, ValueError(f"number of channels doesn't match: has {chan_in} but should have {self.chan_in}")
+
+        out_length = (length - self.k_size) // self.stride + 1
+
+        X_view = sliding_window_view(X, (1, self.k_size, self.chan_in))[::1, :: self.stride, ::1].reshape(batch_size, out_length, self.chan_in, self.k_size)
+
+        self.output = np.einsum("bock, kcd -> bod", X_view, self._parameters)
+
+        return self.output
+
+
+    def backward_update_gradient(self, input, delta):
+        batch_size, length, chan_in = input.shape
+        assert chan_in == self.chan_in, ValueError(f"number of channels doesn't match: has {chan_in} but should have {self.chan_in}")
+
+        out_length = (length - self.k_size) // self.stride + 1
+
+        X_view = sliding_window_view(input, (1, self.k_size, self.chan_in))[::1, :: self.stride, ::1].reshape(batch_size, out_length, self.chan_in, self.k_size)
+
+        self._gradient += ( np.einsum("bock, bod -> kcd", X_view, delta) / batch_size)
+
+        
+    def backward_delta(self, input, delta):
+        _, length, chan_in = input.shape
+        assert chan_in == self.chan_in, ValueError(f"number of channels doesn't match: has {chan_in} but should have {self.chan_in}")
+
+        out_length = (length - self.k_size) // self.stride + 1
+
+        self.d_out = np.zeros_like(input)
+        d_in = np.einsum("bod, kcd -> kboc", delta, self._parameters)
+
+        for i in range(self.k_size):
+            self.d_out[:, i : i + out_length * self.stride : self.stride, :] += d_in[i]
+
+        return self.d_out
+
+
+    def update_parameters(self, learning_rate):
+        self._parameters -= learning_rate * self._gradient
+       
