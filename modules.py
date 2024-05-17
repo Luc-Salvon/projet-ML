@@ -61,38 +61,32 @@ class MaxPool1D(Module):
 
     def forward(self, X):
         batch_size, length, chan_in = X.shape
-        out_length = (length - self.k_size) // self.stride + 1
 
-        X_view = sliding_window_view(X, (1, self.k_size, 1))[::1, :: self.stride, ::1].reshape(batch_size, out_length, chan_in, self.k_size)
+        dout = (length - self.k_size) // self.stride + 1
 
-        self.output = np.max(X_view, axis=-1)
-        return self.output
+        indices = np.arange(0, dout * self.stride, self.stride).reshape(-1, 1) + np.arange(self.k_size)  # shape : dout x k_size
+        segments = X[:, indices, :]  # shape : batch_size x dout x k_size x chan_in
+        output = np.max(segments, axis=2)  # shape : batch_size x dout x chan_in
+        
+        return output
 
-
-    def backward_delta(self, input, delta):
+    def backward_delta(self, input, delta): # pas sur
         batch_size, length, chan_in = input.shape
-        out_length = (length - self.k_size) // self.stride + 1
+        dout = (length - self.k_size) // self.stride + 1
 
-        input_view = sliding_window_view(input, (1, self.k_size, 1))[::1, :: self.stride, ::1].reshape(batch_size, out_length, chan_in, self.k_size)
+        indices = np.arange(0, dout * self.stride, self.stride).reshape(-1, 1) + np.arange(self.k_size)  # shape : dout x k_size
+        segments = input[:, indices, :]  # shape : batch_size x dout x k_size x chan_in
+        max_indices = np.argmax(segments, axis=2) + indices[:, 0].reshape(1, -1, 1)  # shape : batch_size x dout x chan_in
 
-        max_indices = np.argmax(input_view, axis=-1)
 
         batch_indices = np.arange(batch_size)[:, None, None]
-        out_indices = np.arange(out_length)[None, :, None]
+        dout_indices = np.arange(dout)[None, :, None]
         chan_indices = np.arange(chan_in)[None, None, :]
 
-        self.d_out = np.zeros_like(input)
-        self.d_out[batch_indices, out_indices * self.stride + max_indices, chan_indices] += delta[batch_indices, max_indices, chan_indices]
+        delta_input = np.zeros_like(input)
+        delta_input[batch_indices, dout_indices * self.stride + max_indices, chan_indices] += delta[batch_indices, max_indices, chan_indices]
 
-        """
-        for b in range(batch_size):
-            for i in range(out_length):
-                for c in range(chan_in):
-                    max_index = max_indices[b, i, c]
-                    self.d_out[b, i * self.stride + max_index, c] += delta[b, i, c]
-        """
-
-        return self.d_out
+        return delta_input
 
 
 
@@ -128,7 +122,31 @@ class Conv1D(Module):
         return output
 
 
+    def backward_update_gradient(self, input, delta): # pas sur du tout
+        batch_size, length, chan_in = input.shape
+        assert chan_in == self.chan_in, ValueError(f"number of channels doesn't match: data has {chan_in} but should have {self.chan_in}")
 
+        dout = delta.shape[1]
+        indices = np.arange(0, dout * self.stride, self.stride).reshape(-1, 1) + np.arange(self.k_size)
+        segments = input[:, indices, :]  # shape : batch_size x dout x k_size x chan_in
+        
+        self._gradient += np.sum(np.tensordot(segments, delta, axes=((0, 1), (0, 1))), axis=0)
+
+
+        
+    def backward_delta(self, input, delta): # pas sur
+        batch_size, length, chan_in = input.shape
+        assert chan_in == self.chan_in, ValueError(f"number of channels doesn't match: data has {chan_in} but should have {self.chan_in}")
+  
+        dout = delta.shape[1]
+        delta_input = np.zeros_like(input)
+        
+        indices = np.arange(0, dout * self.stride, self.stride).reshape(-1, 1) + np.arange(self.k_size)
+        
+        for i in range(self.k_size):
+            delta_input[:, indices[:, i], :] += np.tensordot(delta, self._parameters[i], axes=(2, 1))
+        
+        return delta_input
 
 
     def update_parameters(self, learning_rate):
