@@ -97,7 +97,6 @@ class MaxPool1D(Module):
 
 
 
-
 class Conv1D(Module):
 
     def __init__(self, k_size: int, chan_in: int, chan_out: int, stride: int = 1):
@@ -114,8 +113,25 @@ class Conv1D(Module):
     def zero_grad(self):
         self._gradient = np.zeros_like(self._parameters)
 
-      
+       
+    def forward(self, X):
+        batch_size, length, chan_in = X.shape
+        assert chan_in == self.chan_in, ValueError(f"number of channels doesn't match: data has {chan_in} but should have {self.chan_in}")
+        
+        dout = (length - self.k_size) // self.stride + 1
+
+        indices = np.arange(0, dout * self.stride, self.stride).reshape(-1, 1) + np.arange(self.k_size) # shape : dout x k_size
+
+        segments = X[:, indices, :] # shape : batch_size x dout x k_size x chan_in
+        output = np.tensordot(segments, self._parameters, axes=((2, 3), (0, 1)))
+
+        return output
+
+
+
+
 
     def update_parameters(self, learning_rate):
         self._parameters -= learning_rate * self._gradient
        
+
