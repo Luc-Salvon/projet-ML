@@ -183,7 +183,7 @@ def test_partie6():
     onehot_test = np.zeros((y_test.size,10))
     onehot_test[np.arange(y_test.size),y_test]=1
     net = Sequentiel([Conv1D(3,1,32),MaxPool1D(2,2),Flatten(),Linear(992,100),ReLU(),Linear(100,10)])
-    evolution_loss = sgd(net, (X_train, onehot_train), loss=LogSoftmaxCrossEntropy(), batch_size=32, nb_epochs=10, eps=1e-2)
+    evolution_loss = sgd(net, (X_train, onehot_train), loss=LogSoftmaxCrossEntropy(), batch_size=32, nb_epochs=100, eps=1e-2)
 
     # Plot de la loss
     plt.plot(evolution_loss)

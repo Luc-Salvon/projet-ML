@@ -1,6 +1,8 @@
 import math
 import numpy as np
 from classes_abstraites import Module
+from numpy.lib.stride_tricks import sliding_window_view
+from typing import Literal
 
 
 
@@ -11,7 +13,7 @@ class Linear(Module):
         self.input_size = input
         self.output_size = output
 
-        self._parameters = np.random.uniform(-math.sqrt(self.input_size), math.sqrt(self.input_size), (self.input_size + 1, self.output_size))
+        self._parameters = np.random.uniform(-1, 1, (self.input_size + 1, self.output_size))
         self._gradient = np.zeros((self.input_size + 1, self.output_size))
 
     def zero_grad(self):
@@ -45,6 +47,7 @@ class Linear(Module):
 
 ### Convolution
 
+
 class Flatten(Module):
     def forward(self, X):
         return X.reshape(X.shape[0], -1)
@@ -74,7 +77,7 @@ class MaxPool1D(Module):
     
 
     def backward_delta(self, input, delta): # marche
-        from numpy.lib.stride_tricks import sliding_window_view
+        
 
         batch_size, length, chan_in = input.shape
         out_length = (length - self.k_size) // self.stride + 1
@@ -201,7 +204,3 @@ class Conv1D(Module):
             delta_input[:, indices[:, i], :] += np.tensordot(delta, self._parameters[i], axes=(2, 1))
         
         return delta_input
-
-
-       
-

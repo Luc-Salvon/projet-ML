@@ -36,7 +36,7 @@ class LogSoftmaxCrossEntropy(Loss):
 
     def backward(self, y: np.ndarray, yhat: np.ndarray):
         assert y.shape == yhat.shape, ValueError(f"y has shape {y.shape} and yhat has shape {yhat.shape}")
-        
+
         return np.exp(yhat) / np.exp(yhat).sum(axis=1).reshape((-1, 1)) - y
 
 
