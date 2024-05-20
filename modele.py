@@ -1,6 +1,7 @@
 from typing import Iterable
 
-from modules import TanH, Linear, Sigmoide
+from modules import  Linear 
+from activation import TanH, Sigmoide
 
 import numpy as np
 

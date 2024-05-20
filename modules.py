@@ -1,7 +1,6 @@
 import math
 import numpy as np
 from classes_abstraites import Module
-from numpy.lib.stride_tricks import sliding_window_view
 
 
 
@@ -52,6 +51,9 @@ class Flatten(Module):
 
     def backward_delta(self, input, delta):
         return delta.reshape(input.shape)
+    
+    def update_parameters(self, gradient_step=1e-3):
+        pass
 
 
 class MaxPool1D(Module):
@@ -69,8 +71,56 @@ class MaxPool1D(Module):
         output = np.max(segments, axis=2)  # shape : batch_size x dout x chan_in
         
         return output
+    
 
-    def backward_delta(self, input, delta): # pas sur
+    def backward_delta(self, input, delta): # marche
+        from numpy.lib.stride_tricks import sliding_window_view
+
+        batch_size, length, chan_in = input.shape
+        out_length = (length - self.k_size) // self.stride + 1
+
+        input_view = sliding_window_view(input, (1, self.k_size, 1))[::1, :: self.stride, ::1]
+        input_view = input_view.reshape(batch_size, out_length, chan_in, self.k_size)
+
+        max_indices = np.argmax(input_view, axis=-1)
+
+        # Create indices for batch and channel dimensions
+        batch_indices, out_indices, chan_indices = np.meshgrid(
+            np.arange(batch_size),
+            np.arange(out_length),
+            np.arange(chan_in),
+            indexing="ij",
+        )
+
+        # Update d_out using advanced indexing
+        delta_input = np.zeros_like(input)
+        delta_input[batch_indices, out_indices * self.stride + max_indices, chan_indices] += delta[batch_indices, max_indices, chan_indices]
+
+        return delta_input
+    
+
+    def backward_delta_2(self, input, delta): #long
+        batch_size, length, chan_in = input.shape
+        out_length = (length - self.k_size) // self.stride + 1
+        
+        # Initialize delta_input
+        delta_input = np.zeros_like(input)
+        
+        for b in range(batch_size):
+            for c in range(chan_in):
+                for i in range(out_length):
+                    start_idx = i * self.stride
+                    end_idx = start_idx + self.k_size
+                    max_idx = np.argmax(input[b, start_idx:end_idx, c])
+                    
+                    # Update delta_input
+                    delta_input[b, start_idx + max_idx, c] += delta[b, i, c]
+
+        return delta_input
+
+
+    
+    def backward_delta_3(self, input, delta): # marche pas
         batch_size, length, chan_in = input.shape
         dout = (length - self.k_size) // self.stride + 1
 
@@ -85,8 +135,10 @@ class MaxPool1D(Module):
 
         delta_input = np.zeros_like(input)
         delta_input[batch_indices, dout_indices * self.stride + max_indices, chan_indices] += delta[batch_indices, max_indices, chan_indices]
-
         return delta_input
+    
+    def update_parameters(self, gradient_step=1e-3):
+        pass
 
 
 
@@ -100,7 +152,9 @@ class Conv1D(Module):
         self.chan_out = chan_out
         self.stride = stride
 
-        self._parameters = np.random.uniform(0.0, 1.0, (self.k_size, self.chan_in, self.chan_out))
+        scale_factor = 0.1 
+        self._parameters = np.random.uniform(-1.0 * scale_factor, 1.0 * scale_factor, (self.k_size, self.chan_in, self.chan_out))
+
         self._gradient = np.zeros_like(self._parameters)
 
 
@@ -149,7 +203,5 @@ class Conv1D(Module):
         return delta_input
 
 
-    def update_parameters(self, learning_rate):
-        self._parameters -= learning_rate * self._gradient
        
 
