@@ -95,27 +95,6 @@ def test_partie4():
 
 
 
-def train_autoencoder(autoencoder, data, num_epochs=10000, eps=1e-5):
-    optimizer = Optim(autoencoder, loss=MSELoss(), eps=eps)
-    
-    for epoch in range(num_epochs):
-        total_loss = 0.0
-        for i,batch_data in enumerate(data): 
-            reconstructed_data = autoencoder.forward(batch_data)
-            loss = MSELoss().forward(batch_data, reconstructed_data)
-            total_loss += loss.mean()
-            
-            # Backpropagation
-            delta = MSELoss().backward(batch_data, reconstructed_data)
-            autoencoder.backward(batch_data, delta)
-            
-            # Parameter update
-            optimizer.step(batch_data, reconstructed_data, autoencoder=True)
-        
-        # Print average loss for the epoch
-        print(f"Epoch {epoch+1}/{num_epochs}, Average Loss: {total_loss / len(data)}")
-
-
 
 def test_encodeur_images_compressees():
     # visualiser les images reconstruites après une forte compression
@@ -123,6 +102,7 @@ def test_encodeur_images_compressees():
     digits = load_digits()
     X = digits.data
     y = digits.target
+    X /= 255.0 # Normalisation des données
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
     
     # y to one_hot
@@ -133,11 +113,11 @@ def test_encodeur_images_compressees():
     onehot_test[np.arange(y_test.size),y_test]=1
 
 
-    autoencoder = AutoEncoder(input_size = X_train.shape[1],hidden_size_1=40)
-        
-    data_batches = np.array_split(X_train, len(X_train) // 32)
-    train_autoencoder(autoencoder, data_batches)
+    encoder = Sequentiel([Linear(X.shape[1], 200), TanH(), Linear(200, 100), TanH()])
+    decoder = Sequentiel([Linear(100,X.shape[1])])
+    autoencoder = AutoEncoder(encoder,decoder)
 
+    evolution_loss = sgd(autoencoder, (X_train, X_train), loss=MSELoss(), batch_size=64, nb_epochs=600, eps=1e-10)
 
     reconstructed_data = autoencoder.forward(X_test)
     
@@ -205,5 +185,5 @@ if __name__ == "__main__":
     # test_partie1()
     # test_partie2()
     # test_partie4()
-    # test_encodeur_images_compressees()
-    test_partie6()
+    test_encodeur_images_compressees()
+    # test_partie6()

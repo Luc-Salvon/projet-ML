@@ -29,12 +29,12 @@ class Sequentiel:
 
 
 class Optim:
-    def __init__(self, net: Sequentiel, loss: classes_abstraites.Loss, eps: float):
+    def __init__(self, net, loss: classes_abstraites.Loss, eps: float):
         self.net = net
         self.loss = loss
         self.eps = eps
 
-    def step(self, batch_X, batch_Y, autoencoder=False):
+    def step(self, batch_X, batch_Y):
         Yhat = self.net.forward(batch_X)
 
         delta = self.loss.backward(batch_Y, Yhat)
@@ -42,26 +42,14 @@ class Optim:
         # Calcul du gradient
         self.net.backward(batch_X, delta)
 
-        if autoencoder:
-            # Update parameters
-            for module in self.net.encoder.modules:
-                module.update_parameters(gradient_step=self.eps)
-                module.zero_grad()
-
-            for module in self.net.decoder.modules:
-                module.update_parameters(gradient_step=self.eps)
-                module.zero_grad()
-        
-        else:
-
-            # Update des paramètres
-            for module in self.net.modules:
-                module.update_parameters(gradient_step=self.eps)
-                module.zero_grad()
+        # Update des paramètres
+        for module in self.net.modules:
+            module.update_parameters(gradient_step=self.eps)
+            module.zero_grad()
         
 
 
-def sgd(net: Sequentiel, data: tuple[np.ndarray], loss: classes_abstraites.Loss, batch_size: int = 5, nb_epochs: int = 50, eps: float = 10e-5, step: float = 1e-3):
+def sgd(net, data: tuple[np.ndarray], loss: classes_abstraites.Loss, batch_size: int = 5, nb_epochs: int = 50, eps: float = 10e-5, step: float = 1e-3):
     X, Y = data[:]
     N = X.shape[0]  # Nombre d'exemples total
 
@@ -86,18 +74,27 @@ def sgd(net: Sequentiel, data: tuple[np.ndarray], loss: classes_abstraites.Loss,
 
 
 
+
 class AutoEncoder:
-    def __init__(self,activation=TanH(),input_size=256,hidden_size_1=100,hidden_size_2=10):
-        self.encoder = Sequentiel([Linear(input_size, hidden_size_1), activation, Linear(hidden_size_1, hidden_size_2), activation])
-    
-        self.decoder = Sequentiel([Linear(hidden_size_2, hidden_size_1), activation, Linear(hidden_size_1, input_size), Sigmoide()])
+    def __init__(self, encoder: Sequentiel, decoder: Sequentiel):
+        self.encoder = encoder
+        self.decoder = decoder
+        self.modules = self.encoder.modules + self.decoder.modules
 
-    def forward(self,data):
-        return self.decoder.forward(self.encoder.forward(data))
+    def forward(self, X):
+        latent = self.encoder.forward(X)
+        reconstructed = self.decoder.forward(latent)
+        return reconstructed
     
+    def latent(self, X):
+        return self.encoder.forward(X)
 
-    def backward(self, input, delta):
-        delta_decoder = delta
-        delta_encoder = self.decoder.backward(input, delta_decoder)
-        self.encoder.backward(input, delta_encoder)
+    def backward(self, X, delta):
+        # Backward pass through decoder
+        decoder_delta = self.decoder.backward(self.encoder.inputs[-1], delta)
+        
+        # Backward pass through encoder
+        encoder_delta = self.encoder.backward(X, decoder_delta)
+        
+        return encoder_delta
 

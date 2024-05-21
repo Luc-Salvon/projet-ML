@@ -13,7 +13,7 @@ class Linear(Module):
         self.input_size = input
         self.output_size = output
 
-        self._parameters = np.random.uniform(-1, 1, (self.input_size + 1, self.output_size))
+        self._parameters = np.random.uniform(-0.1, 0.1, (self.input_size + 1, self.output_size))
         self._gradient = np.zeros((self.input_size + 1, self.output_size))
 
     def zero_grad(self):
@@ -22,6 +22,8 @@ class Linear(Module):
     def forward(self, X: np.ndarray):
         assert X.shape[1] == self.input_size
         X = np.concatenate((X, np.ones((X.shape[0], 1))), axis=1)  # Ajout du biais
+        #print(self._parameters, "param")
+        #print(X,"X")
         return X @ self._parameters
 
     def backward_update_gradient(self, input: np.ndarray, delta: np.ndarray):
@@ -77,7 +79,6 @@ class MaxPool1D(Module):
     
 
     def backward_delta(self, input, delta): # marche
-        
 
         batch_size, length, chan_in = input.shape
         out_length = (length - self.k_size) // self.stride + 1
