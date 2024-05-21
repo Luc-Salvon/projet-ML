@@ -20,10 +20,10 @@ class Linear(Module):
         self._gradient.fill(0)
 
     def forward(self, X: np.ndarray):
-        assert X.shape[1] == self.input_size
+        assert X.shape[1] == self.input_size, ValueError(f"shape doesn't match: data is {X.shape[1]} but should have {self.input_size}")
+
         X = np.concatenate((X, np.ones((X.shape[0], 1))), axis=1)  # Ajout du biais
-        #print(self._parameters, "param")
-        #print(X,"X")
+    
         return X @ self._parameters
 
     def backward_update_gradient(self, input: np.ndarray, delta: np.ndarray):

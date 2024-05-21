@@ -113,36 +113,73 @@ def test_encodeur_images_compressees():
     onehot_test[np.arange(y_test.size),y_test]=1
 
 
-    encoder = Sequentiel([Linear(X.shape[1], 200), TanH(), Linear(200, 100), TanH()])
-    decoder = Sequentiel([Linear(100,X.shape[1])])
-    autoencoder = AutoEncoder(encoder,decoder)
+    # Linear
 
-    evolution_loss = sgd(autoencoder, (X_train, X_train), loss=MSELoss(), batch_size=64, nb_epochs=600, eps=1e-10)
+    encoder_lin = Sequentiel([Linear(X.shape[1], 200), TanH(), Linear(200, 100), TanH()])
+    decoder_lin = Sequentiel([Linear(100,X.shape[1])])
+    autoencoder_lin = AutoEncoder(encoder_lin,decoder_lin)
 
-    reconstructed_data = autoencoder.forward(X_test)
+    evolution_loss = sgd(autoencoder_lin, (X_train, X_train), loss=MSELoss(), batch_size=64, nb_epochs=600, eps=1e-10)
+
+    reconstructed_data_lin = autoencoder_lin.forward(X_test)
     
     # Reshape the reconstructed images to their original dimensions
     num_images = X_test.shape[0]
     original_shape = (8, 8)
-    reconstructed_images = reconstructed_data.reshape(num_images, *original_shape)[:10]
+    reconstructed_images = reconstructed_data_lin.reshape(num_images, *original_shape)[:10]
     original_images = X_test.reshape(num_images, *original_shape)[:10]
 
-    num_images = 5 # Show the first 5 digits
+    num_images_affichees = 5 # Show the first 5 digits
     
-    # Plot original and reconstructed images
+    # Plot original and reconstructed images 
     plt.figure(figsize=(10, 5))
-    for i in range(num_images):
-        plt.subplot(2, num_images, i + 1)
+    for i in range(num_images_affichees):
+        plt.subplot(2, num_images_affichees, i + 1)
         plt.imshow(original_images[i], cmap='gray')
         plt.title('Original')
         plt.axis('off')
         
-        plt.subplot(2, num_images, i + 1 + num_images)
+        plt.subplot(2, num_images_affichees, i + 1 + num_images_affichees)
         plt.imshow(reconstructed_images[i], cmap='gray')
         plt.title('Reconstructed')
         plt.axis('off')
     
     plt.tight_layout()
+    plt.suptitle('Linear', fontsize=16)
+    plt.show()
+
+
+    # Convolution
+    #X_train = X_train.reshape((X_train.shape[0],X_train.shape[1],1))
+    X_test = X_test.reshape((X_test.shape[0],X_test.shape[1],1))
+    encoder_conv = Sequentiel([Conv1D(3,1,5),MaxPool1D(2,2),Flatten(),Linear(155,100),ReLU()])
+    decoder_conv = Sequentiel([Linear(100,X.shape[1])])
+    autoencoder_conv = AutoEncoder(encoder_conv,decoder_conv)
+
+    evolution_loss = sgd(autoencoder_conv, (X_train.reshape((X_train.shape[0],X_train.shape[1],1)), X_train), loss=MSELoss(), batch_size=64, nb_epochs=600, eps=1e-8)
+
+    reconstructed_data_conv = autoencoder_conv.forward(X_test)
+    
+    # Reshape the reconstructed images to their original dimensions
+    reconstructed_images = reconstructed_data_conv.reshape(num_images, *original_shape)[:10]
+    original_images = X_test.reshape(num_images, *original_shape)[:10]
+
+
+    # Plot original and reconstructed images
+    plt.figure(figsize=(10, 5))
+    for i in range(num_images_affichees):
+        plt.subplot(2, num_images_affichees, i + 1)
+        plt.imshow(original_images[i], cmap='gray')
+        plt.title('Original')
+        plt.axis('off')
+        
+        plt.subplot(2, num_images_affichees, i + 1 + num_images_affichees)
+        plt.imshow(reconstructed_images[i], cmap='gray')
+        plt.title('Reconstructed')
+        plt.axis('off')
+    
+    plt.tight_layout()
+    plt.suptitle('Convolution')
     plt.show()
 
 
@@ -163,7 +200,7 @@ def test_partie6():
     onehot_test = np.zeros((y_test.size,10))
     onehot_test[np.arange(y_test.size),y_test]=1
     net = Sequentiel([Conv1D(3,1,32),MaxPool1D(2,2),Flatten(),Linear(992,100),ReLU(),Linear(100,10)])
-    evolution_loss = sgd(net, (X_train, onehot_train), loss=LogSoftmaxCrossEntropy(), batch_size=32, nb_epochs=100, eps=1e-2)
+    evolution_loss = sgd(net, (X_train, onehot_train), loss=LogSoftmaxCrossEntropy(), batch_size=32, nb_epochs=100, eps=1e-3)
 
     # Plot de la loss
     plt.plot(evolution_loss)
