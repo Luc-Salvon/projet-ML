@@ -49,24 +49,26 @@ class Optim:
         
 
 
-def sgd(net, data: tuple[np.ndarray], loss: classes_abstraites.Loss, batch_size: int = 5, nb_epochs: int = 50, eps: float = 10e-5, step: float = 1e-3):
-    X, Y = data[:]
-    N = X.shape[0]  # Nombre d'exemples total
+def sgd(net, data_train: tuple[np.ndarray], data_test: tuple[np.ndarray], loss: classes_abstraites.Loss, batch_size: int = 5, nb_epochs: int = 50, eps: float = 1e-15, step: float = 1e-3):
+    X_train, Y_train = data_train[:]
+    X_test, Y_test = data_test[:]
+    N = X_train.shape[0]  # Nombre d'exemples total
 
     optim = Optim(net, loss, step)
 
-    evolution_loss = []
+    evolution_loss = [[],[]]
 
     for i_epoch in range(nb_epochs):  # On itère sur les epochs
-        evolution_loss.append(loss.forward(Y, net.forward(X)).mean())
+        evolution_loss[0].append(loss.forward(Y_train, net.forward(X_train)).mean())
+        evolution_loss[1].append(loss.forward(Y_test, net.forward(X_test)).mean())
 
         # Si la loss n'évolue pas significativement on s'arrête
-        if len(evolution_loss) > 1 and abs(evolution_loss[-1] - evolution_loss[-2]) < eps:
+        if len(evolution_loss[0]) > 1 and abs(evolution_loss[0][-1] - evolution_loss[0][-2]) < eps:
             break
 
         for i_batch in range(0, N, batch_size):  # On itère sur les batchs
-            batch_X = X[i_batch:min(i_batch + batch_size, N)]
-            batch_y = Y[i_batch:min(i_batch + batch_size, N)]
+            batch_X = X_train[i_batch:min(i_batch + batch_size, N)]
+            batch_y = Y_train[i_batch:min(i_batch + batch_size, N)]
 
             optim.step(batch_X, batch_y)
 

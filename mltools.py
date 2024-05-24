@@ -123,7 +123,7 @@ def grid_search(net, param_grid, X, y, metric, cv=3, save_loss_gaphs=False):
     best_score: the best mean cross-validation score
     """
 
-    def cross_val_score(model, X, y, cv, metric, save_loss_gaphs, params):
+    def cross_val_score(model, X, y, cv, metric, save_loss_gaphs, params, loss=MSELoss()):
         scores = []
         X_split, y_split = np.array_split(X, cv), np.array_split(y, cv)
         for i in range(cv):
@@ -132,13 +132,15 @@ def grid_search(net, param_grid, X, y, metric, cv=3, save_loss_gaphs=False):
             X_val = X_split[i]
             y_val = y_split[i]
             
-            evolution_loss = sgd(net, (X_train, y_train), loss=MSELoss())
+            evolution_loss = sgd(net, (X_train, y_train),(X_val,y_val), loss=loss)
 
             if save_loss_gaphs:
-                plt.plot(evolution_loss)
+                plt.plot(evolution_loss[0],label="train")
+                plt.plot(evolution_loss[1],label='val')
                 plt.xlabel("Nombre d'epochs")
                 plt.ylabel("Loss")
-                plt.title(f"Evolution de la loss en fonction du nombre d'epochs\n{params}")
+                plt.title("Evolution de la loss en fonction du nombre d'epochs")
+                plt.legend()
                 plt.savefig(f"loss_graphs/{params}_{i}.png")
                 plt.clf()
 
@@ -167,7 +169,7 @@ def grid_search(net, param_grid, X, y, metric, cv=3, save_loss_gaphs=False):
     return best_params, best_score
 
 
-"""
+
 # Example 
 net = Sequentiel([Linear(2, 1)])
 data = gen_arti(nbex=1000, data_type=1)
@@ -181,4 +183,4 @@ best_params, best_score = grid_search(net, param_grid, X, y, metric=(lambda y, y
 
 print("Best Parameters:", best_params)
 print("Best Score:", best_score)
-"""
+
