@@ -9,6 +9,25 @@ from losses import *
 from modules import *
 from activation import *
 
+def load_mnist():
+    digits = load_digits()
+    X = digits.data
+    y = digits.target
+
+    X /= 255.0 # Normalisation des données
+
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    X_train = X_train.reshape((X_train.shape[0],X_train.shape[1],1))
+    X_test = X_test.reshape((X_test.shape[0],X_test.shape[1],1))
+
+    onehot_train = np.zeros((y_train.size,10))
+    onehot_train[np.arange(y_train.size),y_train]=1
+
+    onehot_test = np.zeros((y_test.size,10))
+    onehot_test[np.arange(y_test.size),y_test]=1
+
+    return X_train, X_test, onehot_train, onehot_test
+
 
 def test_partie1():
     net = Sequentiel([Linear(2, 1)])
@@ -61,20 +80,9 @@ def test_partie2():
 
 
 def test_partie4():
-    digits = load_digits()
-    X = digits.data
-    y = digits.target
+    X_train, X_test, onehot_train, onehot_test = load_mnist()
 
-    X /= 255.0 # Normalisation des données
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    onehot_train = np.zeros((y_train.size,10))
-    onehot_train[np.arange(y_train.size),y_train]=1
-
-    onehot_test = np.zeros((y_test.size,10))
-    onehot_test[np.arange(y_test.size),y_test]=1
-
-    net = Sequentiel([Linear(X.shape[1], 10)])
+    net = Sequentiel([Linear(X_train.shape[1], 10)])
     
     evolution_loss = sgd(net, (X_train, onehot_train), loss=LogSoftmaxCrossEntropy(), batch_size=32, nb_epochs=100, eps=1e-2)
 
@@ -99,24 +107,13 @@ def test_partie4():
 def test_encodeur_images_compressees():
     # visualiser les images reconstruites après une forte compression
 
-    digits = load_digits()
-    X = digits.data
-    y = digits.target
-    X /= 255.0 # Normalisation des données
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    
-    # y to one_hot
-    onehot_train = np.zeros((y_train.size,10))
-    onehot_train[np.arange(y_train.size),y_train]=1
-
-    onehot_test = np.zeros((y_test.size,10))
-    onehot_test[np.arange(y_test.size),y_test]=1
+    X_train, X_test, onehot_train, onehot_test = load_mnist()
 
 
     # Linear
 
-    encoder_lin = Sequentiel([Linear(X.shape[1], 200), TanH(), Linear(200, 100), TanH()])
-    decoder_lin = Sequentiel([Linear(100,X.shape[1]),Sigmoide()])
+    encoder_lin = Sequentiel([Linear(X_train.shape[1], 200), TanH(), Linear(200, 100), TanH()])
+    decoder_lin = Sequentiel([Linear(100,X_train.shape[1]),Sigmoide()])
     autoencoder_lin = AutoEncoder(encoder_lin,decoder_lin)
     
     evolution_loss = sgd(autoencoder_lin, (X_train, X_train), loss=BCELoss(), batch_size=64, nb_epochs=1000, eps=1e-8)
@@ -128,8 +125,8 @@ def test_encodeur_images_compressees():
     # Reshape the reconstructed images to their original dimensions
     num_images = X_test.shape[0]
     original_shape = (8, 8)
-    #reconstructed_images = reconstructed_data_lin.reshape(num_images, *original_shape)[:10]
-    #original_images = X_test.reshape(num_images, *original_shape)[:10]
+    reconstructed_images = reconstructed_data_lin.reshape(num_images, *original_shape)[:10]
+    original_images = X_test.reshape(num_images, *original_shape)[:10]
 
     num_images_affichees = 5 # Show the first 5 digits
     
@@ -154,7 +151,7 @@ def test_encodeur_images_compressees():
     # Convolution
     X_test = X_test.reshape((X_test.shape[0],X_test.shape[1],1))
     encoder_conv = Sequentiel([Conv1D(3,1,5),MaxPool1D(2,2),Flatten(),Linear(155,100),ReLU()])
-    decoder_conv = Sequentiel([Linear(100,X.shape[1]),Sigmoide()])
+    decoder_conv = Sequentiel([Linear(100,X_train.shape[1]),Sigmoide()])
     autoencoder_conv = AutoEncoder(encoder_conv,decoder_conv)
 
     evolution_loss = sgd(autoencoder_conv, (X_train.reshape((X_train.shape[0],X_train.shape[1],1)), X_train), loss=BCELoss(), batch_size=64, nb_epochs=1000, eps=1e-9)
@@ -185,23 +182,9 @@ def test_encodeur_images_compressees():
 
 
 def test_partie6():
-    digits = load_digits()
-    X = digits.data
-    y = digits.target
-
-    X /= 255.0 # Normalisation des données
-
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
-    X_train = X_train.reshape((X_train.shape[0],X_train.shape[1],1))
-    X_test = X_test.reshape((X_test.shape[0],X_test.shape[1],1))
-
-    onehot_train = np.zeros((y_train.size,10))
-    onehot_train[np.arange(y_train.size),y_train]=1
-
-    onehot_test = np.zeros((y_test.size,10))
-    onehot_test[np.arange(y_test.size),y_test]=1
+    X_train, X_test, onehot_train, onehot_test = load_mnist()
     net = Sequentiel([Conv1D(3,1,32),MaxPool1D(2,2),Flatten(),Linear(992,100),ReLU(),Linear(100,10)])
-    evolution_loss = sgd(net, (X_train, onehot_train), loss=LogSoftmaxCrossEntropy(), batch_size=32, nb_epochs=100, eps=1e-3)
+    evolution_loss = sgd(net, (X_train, onehot_train), loss=LogSoftmaxCrossEntropy(), batch_size=32, nb_epochs=1000, eps=1e-10, step=1e-2)
 
     # Plot de la loss
     plt.plot(evolution_loss)
@@ -223,5 +206,5 @@ if __name__ == "__main__":
     # test_partie1()
     # test_partie2()
     # test_partie4()
-    test_encodeur_images_compressees()
-    # test_partie6()
+    #test_encodeur_images_compressees()
+    test_partie6()
