@@ -2,6 +2,9 @@ import numpy as np
 # from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from matplotlib import cm
+from modele import Sequentiel,sgd
+from modules import Linear
+from losses import MSELoss
 
 
 def plot_data(data, labels=None):
@@ -87,3 +90,82 @@ def gen_arti(centerx=1, centery=1, sigma=0.1, nbex=1000, data_type=0, epsilon=0.
     data = data[idx, :]
     y = y[idx]
     return data, y.reshape(-1, 1)
+
+
+
+def bruitage_données(X,epsilon=0.1):
+    '''
+    X : données
+    epsilon : Probabilité du bruit
+    '''
+    X += np.random.normal(0, epsilon, size=X.shape)
+    return X
+
+
+
+
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import accuracy_score
+import numpy as np
+
+def grid_search(net, param_grid, X, y, cv=3):
+    """
+    Perform a grid search over the given parameter grid.
+    
+    Parameters:
+    model: the neural network
+    param_grid: dictionary where keys are parameter names and values are lists of parameter settings to try
+    X, y: data
+    cv: number of cross-validation folds
+    
+    Returns:
+    best_params: the parameter set that gave the best mean cross-validation score
+    best_score: the best mean cross-validation score
+    """
+
+    def cross_val_score(model, X, y, cv):
+        scores = []
+        X_split, y_split = np.array_split(X, cv), np.array_split(y, cv)
+        for i in range(cv):
+            X_train = np.concatenate(X_split[:i] + X_split[i+1:])
+            y_train = np.concatenate(y_split[:i] + y_split[i+1:])
+            X_val = X_split[i]
+            y_val = y_split[i]
+            
+            sgd(net, (X, y), loss=MSELoss())
+            y_pred = net.forward(X_val)
+            scores.append(accuracy_score(y_val, y_pred))
+        return np.mean(scores)
+
+    best_params = None
+    best_score = -np.inf
+    
+    # Generate all combinations of parameters
+    import itertools
+    keys, values = zip(*param_grid.items())
+    for param_combination in itertools.product(*values):
+        params = dict(zip(keys, param_combination))
+        net.set_params(**params)
+        score = cross_val_score(net, X, y, cv)
+        print(f"Params: {params}, Score: {score}")
+        
+        if score > best_score:
+            best_score = score
+            best_params = params
+
+    return best_params, best_score
+
+# Example usage with a decision tree classifier
+net = Sequentiel([Linear(2, 1)])
+data = gen_arti(nbex=1000, data_type=0)
+X, y = data[0], data[1]
+    
+param_grid = {
+    'learning_rate': [1e-5, 1e-3, 1e-2],
+    'batch_size': [10, 32, 64]
+}
+best_params, best_score = grid_search(net, param_grid, X, y, cv=3)
+
+print("Best Parameters:", best_params)
+print("Best Score:", best_score)
+

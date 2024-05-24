@@ -45,17 +45,6 @@ class Softmax(Module):
         s = self.forward(input)
         n, d = input.shape
 
-        """
-        # Diagonal elements
-        diag_indices = np.arange(d)
-        jacobian_matrices[:, diag_indices, diag_indices] = s * (1 - s)
-        
-        # Off-diagonal elements
-        off_diag_indices = np.arange(d)
-        jacobian_matrices[:, off_diag_indices[:, None], off_diag_indices] = -s[:, :, None] * s[:, None, :]
-        
-        return jacobian_matrices
-        """
         return delta * s * (1-s)
 
     def update_parameters(self, gradient_step=1e-3):
