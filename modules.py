@@ -156,7 +156,7 @@ class Conv1D(Module):
         self.chan_out = chan_out
         self.stride = stride
 
-        scale_factor = 0.1 
+        scale_factor = 0.01 
         self._parameters = np.random.uniform(-1.0 * scale_factor, 1.0 * scale_factor, (self.k_size, self.chan_in, self.chan_out))
 
         self._gradient = np.zeros_like(self._parameters)

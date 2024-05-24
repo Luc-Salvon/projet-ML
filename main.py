@@ -116,18 +116,20 @@ def test_encodeur_images_compressees():
     # Linear
 
     encoder_lin = Sequentiel([Linear(X.shape[1], 200), TanH(), Linear(200, 100), TanH()])
-    decoder_lin = Sequentiel([Linear(100,X.shape[1])])
+    decoder_lin = Sequentiel([Linear(100,X.shape[1]),Sigmoide()])
     autoencoder_lin = AutoEncoder(encoder_lin,decoder_lin)
-
-    evolution_loss = sgd(autoencoder_lin, (X_train, X_train), loss=MSELoss(), batch_size=64, nb_epochs=600, eps=1e-10)
+    
+    evolution_loss = sgd(autoencoder_lin, (X_train, X_train), loss=BCELoss(), batch_size=64, nb_epochs=1000, eps=1e-8)
 
     reconstructed_data_lin = autoencoder_lin.forward(X_test)
+    
+    
     
     # Reshape the reconstructed images to their original dimensions
     num_images = X_test.shape[0]
     original_shape = (8, 8)
-    reconstructed_images = reconstructed_data_lin.reshape(num_images, *original_shape)[:10]
-    original_images = X_test.reshape(num_images, *original_shape)[:10]
+    #reconstructed_images = reconstructed_data_lin.reshape(num_images, *original_shape)[:10]
+    #original_images = X_test.reshape(num_images, *original_shape)[:10]
 
     num_images_affichees = 5 # Show the first 5 digits
     
@@ -147,16 +149,15 @@ def test_encodeur_images_compressees():
     plt.tight_layout()
     plt.suptitle('Linear', fontsize=16)
     plt.show()
-
+    
 
     # Convolution
-    #X_train = X_train.reshape((X_train.shape[0],X_train.shape[1],1))
     X_test = X_test.reshape((X_test.shape[0],X_test.shape[1],1))
     encoder_conv = Sequentiel([Conv1D(3,1,5),MaxPool1D(2,2),Flatten(),Linear(155,100),ReLU()])
-    decoder_conv = Sequentiel([Linear(100,X.shape[1])])
+    decoder_conv = Sequentiel([Linear(100,X.shape[1]),Sigmoide()])
     autoencoder_conv = AutoEncoder(encoder_conv,decoder_conv)
 
-    evolution_loss = sgd(autoencoder_conv, (X_train.reshape((X_train.shape[0],X_train.shape[1],1)), X_train), loss=MSELoss(), batch_size=64, nb_epochs=600, eps=1e-8)
+    evolution_loss = sgd(autoencoder_conv, (X_train.reshape((X_train.shape[0],X_train.shape[1],1)), X_train), loss=BCELoss(), batch_size=64, nb_epochs=1000, eps=1e-9)
 
     reconstructed_data_conv = autoencoder_conv.forward(X_test)
     
