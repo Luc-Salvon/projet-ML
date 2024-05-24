@@ -46,10 +46,11 @@ class BCELoss(Loss):
     def forward(self, y: np.ndarray, yhat: np.ndarray):
         assert y.shape == yhat.shape, ValueError(f"y has shape {y.shape} and yhat has shape {yhat.shape}")
 
-        return -np.mean(y * np.log(yhat) + (1 - y) * np.log(1 - yhat))
-        #return - (y * np.log(yhat) + (1 - y) * np.log(1 - yhat))
+        # Clip yhat to prevent log(0)
+        return -np.mean(y * np.log(np.clip(yhat, 1e-10, 1)) + (1 - y) * np.log(np.clip(1 - yhat, 1e-10, 1)))
 
     def backward(self, y: np.ndarray, yhat: np.ndarray):
         assert y.shape == yhat.shape, ValueError(f"y has shape {y.shape} and yhat has shape {yhat.shape}")
 
-        return - (y / yhat - (1 - y) / (1 - yhat))
+        # Clip yhat to prevent division by zero
+        return -(y / np.clip(yhat, 1e-10, 1) - (1 - y) / np.clip(1 - yhat, 1e-10, 1))

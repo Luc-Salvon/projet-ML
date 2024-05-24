@@ -155,7 +155,9 @@ def grid_search(net, param_grid, X, y, cv=3):
 
     return best_params, best_score
 
-# Example usage with a decision tree classifier
+
+"""
+# Example 
 net = Sequentiel([Linear(2, 1)])
 data = gen_arti(nbex=1000, data_type=0)
 X, y = data[0], data[1]
@@ -168,4 +170,4 @@ best_params, best_score = grid_search(net, param_grid, X, y, cv=3)
 
 print("Best Parameters:", best_params)
 print("Best Score:", best_score)
-
+"""
