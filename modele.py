@@ -20,7 +20,7 @@ class Sequentiel:
 
         return self.inputs[-1]
 
-    def backward(self, input, delta):
+    def backward(self, delta):
         # Backprop -> On calcule le gradient de la fin vers le début
         for i, module in enumerate(self.modules[::-1]):
             module.backward_update_gradient(self.inputs[-(i + 2)], delta)
@@ -40,7 +40,7 @@ class Optim:
         delta = self.loss.backward(batch_Y, Yhat)
 
         # Calcul du gradient
-        self.net.backward(batch_X, delta)
+        self.net.backward(delta)
 
         # Update des paramètres
         for module in self.net.modules:
@@ -91,10 +91,10 @@ class AutoEncoder:
 
     def backward(self, X, delta):
         # Backward pass through decoder
-        decoder_delta = self.decoder.backward(self.encoder.inputs[-1], delta)
+        decoder_delta = self.decoder.backward(delta)
         
         # Backward pass through encoder
-        encoder_delta = self.encoder.backward(X, decoder_delta)
+        encoder_delta = self.encoder.backward(decoder_delta)
         
         return encoder_delta
 

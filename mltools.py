@@ -108,7 +108,7 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import accuracy_score
 import numpy as np
 
-def grid_search(net, param_grid, X, y, cv=3):
+def grid_search(net, param_grid, X, y, metric, cv=3, save_loss_gaphs=False):
     """
     Perform a grid search over the given parameter grid.
     
@@ -123,7 +123,7 @@ def grid_search(net, param_grid, X, y, cv=3):
     best_score: the best mean cross-validation score
     """
 
-    def cross_val_score(model, X, y, cv):
+    def cross_val_score(model, X, y, cv, metric, save_loss_gaphs, params):
         scores = []
         X_split, y_split = np.array_split(X, cv), np.array_split(y, cv)
         for i in range(cv):
@@ -132,9 +132,18 @@ def grid_search(net, param_grid, X, y, cv=3):
             X_val = X_split[i]
             y_val = y_split[i]
             
-            sgd(net, (X, y), loss=MSELoss())
+            evolution_loss = sgd(net, (X_train, y_train), loss=MSELoss())
+
+            if save_loss_gaphs:
+                plt.plot(evolution_loss)
+                plt.xlabel("Nombre d'epochs")
+                plt.ylabel("Loss")
+                plt.title(f"Evolution de la loss en fonction du nombre d'epochs\n{params}")
+                plt.savefig(f"loss_graphs/{params}_{i}.png")
+                plt.clf()
+
             y_pred = net.forward(X_val)
-            scores.append(accuracy_score(y_val, y_pred))
+            scores.append(metric(y_val, y_pred))
         return np.mean(scores)
 
     best_params = None
@@ -145,8 +154,10 @@ def grid_search(net, param_grid, X, y, cv=3):
     keys, values = zip(*param_grid.items())
     for param_combination in itertools.product(*values):
         params = dict(zip(keys, param_combination))
-        net.set_params(**params)
-        score = cross_val_score(net, X, y, cv)
+        for key, value in params.items():
+            setattr(net, key, value)
+        score = cross_val_score(net, X, y, cv, metric, save_loss_gaphs, params)
+
         print(f"Params: {params}, Score: {score}")
         
         if score > best_score:
@@ -159,14 +170,14 @@ def grid_search(net, param_grid, X, y, cv=3):
 """
 # Example 
 net = Sequentiel([Linear(2, 1)])
-data = gen_arti(nbex=1000, data_type=0)
+data = gen_arti(nbex=1000, data_type=1)
 X, y = data[0], data[1]
     
 param_grid = {
     'learning_rate': [1e-5, 1e-3, 1e-2],
     'batch_size': [10, 32, 64]
 }
-best_params, best_score = grid_search(net, param_grid, X, y, cv=3)
+best_params, best_score = grid_search(net, param_grid, X, y, metric=(lambda y, yhat : accuracy_score(y, np.sign(yhat))), cv=3, save_loss_gaphs=True)
 
 print("Best Parameters:", best_params)
 print("Best Score:", best_score)
